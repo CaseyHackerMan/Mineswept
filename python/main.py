@@ -1,8 +1,8 @@
-import pygame, sys, random
+import pygame, sys, random, time
 from drawing import *
 pygame.init()
 
-neighbors = [(-1,-1),(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1),(0,-1)]
+neighbor_offsets = [(-1,-1),(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1),(0,-1)]
 
 class Tile:
     mine = False
@@ -15,8 +15,8 @@ argc = len(sys.argv)
 winW = 1000
 winH = 1000
 fieldW = 20
-fieldH = 15
-density = 10
+fieldH = 20
+density = 12
 
 
 if (argc > 1): fieldW = int(sys.argv[1])
@@ -46,10 +46,8 @@ def draw_tile(x, y, tile):
     
     root.blit(surf,(x,y))
     
-def get_tile(x,y):
-    if 0 <= x < fieldW and 0 <= y < fieldH:
-        return field[x][y]
-    return None
+def check_tile(x,y):
+    return 0 <= x < fieldW and 0 <= y < fieldH
 
 def gen_field():
     for y in range(fieldH):
@@ -57,16 +55,20 @@ def gen_field():
             tile = Tile()
             tile.mine = density > random.randint(0,99)
             tile.covered = True
-            field[x][y] = tile
+            field[x][y] = tile 
 
-def mark(x,y):
-    tile = get_tile(x,y)
-    if not tile: return
-    tile.flag ^= 1
-
+def get_neighbors(x,y):
+    arr = []
+    for xo,yo in neighbor_offsets:
+        x1,y1 = x+xo,y+yo
+        if check_tile(x1,y1):
+            arr.append((x1,y1))
+    return arr
+    
 def reveal(x,y):
-    tile = get_tile(x,y)
-    if not (tile and tile.covered): return
+    tile = field[x][y]
+
+    if not tile.covered: return
 
     tile.covered = False
 
@@ -74,12 +76,60 @@ def reveal(x,y):
         print("YOU LOST")
         exit()
 
-    for xo,yo in neighbors:
-        x1,y1 = x+xo,y+yo
-        neigh = get_tile(x1,y1)
-        if neigh:
-            tile.value += neigh.mine
-            if tile.value == 0: reveal(x1,y1)
+    neighs = get_neighbors(x,y)
+
+    for x1,y1 in neighs:
+        if field[x1][y1].mine: tile.value += 1
+
+    # xp,yp = x*tileSize+fieldX, y*tileSize+fieldY
+    # draw_tile(xp,yp,tile)
+    # pygame.display.update()
+    # time.sleep(.05)
+
+    if tile.value == 0:
+        for x1,y1 in neighs:
+            reveal(x1,y1)
+
+def quick_mark(x,y):
+    neighs = get_neighbors(x,y)
+    
+    c = 0
+    for x1,y1 in neighs:
+        c += field[x1][y1].covered
+
+    if c <= field[x][y].value:
+        for x1,y1 in neighs:
+            neigh = field[x1][y1]
+            if neigh.covered:
+                neigh.flag = True
+
+
+def quick_reveal(x,y):
+    neighs = get_neighbors(x,y)
+    
+    c = 0
+    for x1,y1 in neighs:
+        c += field[x1][y1].flag
+
+    if c >= field[x][y].value:
+        for x1,y1 in neighs:
+            neigh = field[x1][y1]
+            if neigh.covered and not neigh.flag:
+                reveal(x1,y1)
+
+def left_click(x,y):
+    if not check_tile(x,y): return
+    tile = field[x][y]
+    if tile.flag: return
+    if tile.covered: reveal(x,y)
+    else: quick_reveal(x,y)
+
+def right_click(x,y):
+    if not check_tile(x,y): return
+    tile = field[x][y]
+
+    if tile.covered: tile.flag ^= 1
+    else: quick_mark(x,y)
     
 gen_field()
 
@@ -93,9 +143,9 @@ while True:
         if event.type == pygame.QUIT: sys.exit()
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-                reveal(selectX,selectY)
+                left_click(selectX,selectY)
             elif event.button == 3:
-                mark(selectX,selectY)
+                right_click(selectX,selectY)
     
     root.fill((255,255,255))
     for x in range(fieldW):
