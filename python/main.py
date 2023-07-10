@@ -50,10 +50,15 @@ def check_tile(x,y):
     return 0 <= x < fieldW and 0 <= y < fieldH
 
 def gen_field():
+    global correct_marks, covered_tiles, mines
+    correct_marks = 0
+    covered_tiles = fieldH*fieldW
+    mines = 0
     for y in range(fieldH):
         for x in range(fieldW):
             tile = Tile()
             tile.mine = density > random.randint(0,99)
+            mines += tile.mine
             tile.covered = True
             field[x][y] = tile 
 
@@ -66,15 +71,15 @@ def get_neighbors(x,y):
     return arr
     
 def reveal(x,y):
+    global covered_tiles
     tile = field[x][y]
 
     if not tile.covered: return
 
     tile.covered = False
+    covered_tiles -= 1
 
-    if tile.mine:
-        print("YOU LOST")
-        exit()
+    if tile.mine: lose()
 
     neighs = get_neighbors(x,y)
 
@@ -86,11 +91,13 @@ def reveal(x,y):
     # pygame.display.update()
     # time.sleep(.05)
 
+    if covered_tiles == mines: win()
+
     if tile.value == 0:
         for x1,y1 in neighs:
             reveal(x1,y1)
 
-def quick_mark(x,y):
+def quick_flag(x,y):
     neighs = get_neighbors(x,y)
     
     c = 0
@@ -99,9 +106,29 @@ def quick_mark(x,y):
 
     if c <= field[x][y].value:
         for x1,y1 in neighs:
-            neigh = field[x1][y1]
-            if neigh.covered:
-                neigh.flag = True
+            tile = field[x1][y1]
+            if tile.covered and not tile.flag:
+                flag(x1,y1)
+
+def flag(x,y):
+    global correct_marks
+    tile = field[x][y]
+    tile.flag = True
+    if tile.mine:
+        correct_marks += 1
+        if correct_marks == mines:
+            win()
+    else: correct_marks -= 1
+
+def unflag(x,y):
+    global correct_marks
+    tile = field[x][y]
+    tile.flag = False
+    if tile.mine: correct_marks -= 1
+    else:
+        correct_marks += 1
+        if correct_marks == mines:
+            win()
 
 
 def quick_reveal(x,y):
@@ -128,8 +155,18 @@ def right_click(x,y):
     if not check_tile(x,y): return
     tile = field[x][y]
 
-    if tile.covered: tile.flag ^= 1
-    else: quick_mark(x,y)
+    if tile.covered:
+        if tile.flag: unflag(x,y)
+        else: flag(x,y)
+    else: quick_flag(x,y)
+
+def win():
+    print("YOU WIN")
+
+def lose():
+    print("YOU LOSE")
+    time.sleep(1)
+    exit()
     
 gen_field()
 
@@ -153,5 +190,7 @@ while True:
             xp,yp = x*tileSize+fieldX, y*tileSize+fieldY
             draw_tile(xp,yp,field[x][y])
             
+    
+    print(correct_marks,covered_tiles,mines)
     #root.blit(text,(200,100))
     pygame.display.update()
