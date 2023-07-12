@@ -1,19 +1,21 @@
 import pygame, sys
 
-tileSize = 25
+tileSize = 24
 WHITE = pygame.Color("white")
+PINK = pygame.Color("fuchsia")
+RED = pygame.Color("red")
+YELLOW = pygame.Color("yellow")
+GREEN = pygame.Color("green")
+CYAN = pygame.Color("cyan4")
 BLUE = pygame.Color("blue")
 GREY = pygame.Color("grey60")
-BLACK = pygame.Color("black")
-RED = pygame.Color("red")
-CYAN = pygame.Color("cyan4")
-PINK = pygame.Color("fuchsia")
 DARK_GREEN = pygame.Color("darkgreen")
 DARK_BLUE = pygame.Color("darkblue")
 DARK_RED = pygame.Color("darkred")
 LIGHT_GREY = pygame.Color("grey85")
 DARK_GREY = pygame.Color("grey40")
-YELLOW = pygame.Color("yellow")
+BLACK = pygame.Color("black")
+
 
 num_colors = [BLUE, DARK_GREEN, RED, DARK_BLUE, DARK_RED, CYAN, BLACK, DARK_GREY, PINK]
 
@@ -34,10 +36,18 @@ pygame.draw.polygon(flagged_tile, RED, [(8,5),(17,9),(8,13)])
 pygame.draw.line(flagged_tile, BLACK, (8,5), (8,20))
 
 smiley_tile = pygame.Surface.copy(covered_tile)
-pygame.draw.circle(smiley_tile, YELLOW, (12.5,12.5), 9)
+pygame.draw.circle(smiley_tile, YELLOW, (12,12), 9)
 pygame.draw.circle(smiley_tile, BLACK, (9,10), 1)
 pygame.draw.circle(smiley_tile, BLACK, (16,10), 1)
 # pygame.draw.arc(smiley_tile, BLACK, (16,10), 1)
+
+mine_tile = pygame.Surface.copy(empty_tile)
+pygame.draw.line(mine_tile, BLACK, (5,18), (18,5), 3)
+pygame.draw.line(mine_tile, BLACK, (5,5), (18,18), 3)
+#pygame.draw.line(mine_tile, BLACK, (2,11), (21,11), 2)
+#pygame.draw.line(mine_tile, BLACK, (11,2), (11,21), 2)
+#pygame.draw.circle(mine_tile, BLACK, (12,12), 8)
+
 
 n_tiles = [empty_tile]
 
@@ -57,6 +67,8 @@ if __name__ == "__main__":
     root.blit(covered_tile, (x,0))
     x += 30
     root.blit(flagged_tile, (x,0))
+    x += 30
+    root.blit(mine_tile, (x,0))
     x += 30
     for tile in n_tiles:
         root.blit(tile, (x,0))
