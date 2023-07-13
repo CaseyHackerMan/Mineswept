@@ -34,10 +34,10 @@ playing = True
 start_time = None
 won = False
 
-for y in range(fieldH):
-    row = []
-    for x in range(fieldW):
-        row.append(Tile())
+for x in range(fieldW):
+    row = [Tile() for y in range(fieldH)]
+    # for y in range(fieldH):
+    #     row.append(Tile())
     field.append(row)
 
 root = pygame.display.set_mode((winW,winH))
@@ -47,11 +47,6 @@ font = pygame.font.SysFont('Comic Sans MS', 15)
 large_font = pygame.font.SysFont('Comic Sans MS', 25)
 
 clock = pygame.time.Clock()
-
-def add_vec(v1,v2): return (v1[0]+v2[0],v1[1]+v2[1])
-def sub_vec(v1,v2): return (v1[0]-v2[0],v1[1]-v2[1])
-def mul_vec(v,x): return (v[0]*x,v[1]*x)
-def div_vec(v,x): return (v[0]/x,v[1]/x)
 
 def draw_tile(x,y):
     tile = field[x][y]
@@ -104,7 +99,7 @@ def draw_banner():
         else:
             mines_text = font.render(f'Mines:', True, BLACK) 
         pygame.draw.rect(root,LIGHT_GREY,banner_rect, 0, 6)
-        pygame.draw.rect(root,BLACK,banner_rect, 3, 6)
+        pygame.draw.rect(root,BLACK,banner_rect, 2, 6)
         root.blit(time_text,(10,1))
         root.blit(mines_text,(10,26))
     else:
@@ -113,8 +108,6 @@ def draw_banner():
         pos = div_vec(sub_vec(banner_rect.size,text.get_size()),2)
         root.blit(text, pos)
         
-
-
 def get_neighbors(x,y):
     arr = []
     for xo,yo in neighbor_offsets:

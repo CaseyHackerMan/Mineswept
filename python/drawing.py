@@ -5,7 +5,7 @@ WHITE = pygame.Color("white")
 PINK = pygame.Color("fuchsia")
 RED = pygame.Color("red")
 YELLOW = pygame.Color("yellow")
-GREEN = pygame.Color("green")
+GREEN = pygame.Color("darkgreen")
 CYAN = pygame.Color("cyan4")
 BLUE = pygame.Color("blue")
 GREY = pygame.Color("grey60")
@@ -16,8 +16,12 @@ LIGHT_GREY = pygame.Color("grey85")
 DARK_GREY = pygame.Color("grey40")
 BLACK = pygame.Color("black")
 
-
 num_colors = [BLUE, DARK_GREEN, RED, DARK_BLUE, DARK_RED, CYAN, BLACK, DARK_GREY, PINK]
+
+def add_vec(v1,v2): return (v1[0]+v2[0],v1[1]+v2[1])
+def sub_vec(v1,v2): return (v1[0]-v2[0],v1[1]-v2[1])
+def mul_vec(v,x): return (v[0]*x,v[1]*x)
+def div_vec(v,x): return (v[0]/x,v[1]/x)
 
 pygame.font.init()
 font = pygame.font.SysFont('Comic Sans MS', 20)
@@ -32,29 +36,34 @@ pygame.draw.rect(covered_tile,DARK_GREY,covered_tile.get_rect(),3)
 pygame.draw.rect(covered_tile,BLACK,covered_tile.get_rect(),1)
 
 flagged_tile = pygame.Surface.copy(covered_tile)
-pygame.draw.polygon(flagged_tile, RED, [(8,5),(17,9),(8,13)])
-pygame.draw.line(flagged_tile, BLACK, (8,5), (8,20))
+pygame.draw.polygon(flagged_tile, RED, [(8,4),(17,8),(8,12)])
+pygame.draw.line(flagged_tile, BLACK, (8,4), (8,19))
 
 smiley_tile = pygame.Surface.copy(covered_tile)
 pygame.draw.circle(smiley_tile, YELLOW, (12,12), 9)
 pygame.draw.circle(smiley_tile, BLACK, (9,10), 1)
-pygame.draw.circle(smiley_tile, BLACK, (16,10), 1)
-# pygame.draw.arc(smiley_tile, BLACK, (16,10), 1)
+pygame.draw.circle(smiley_tile, BLACK, (15,10), 1)
+pygame.draw.lines(smiley_tile, BLACK, 0, [(7,14),(10,16),(13,16),(16,14)])
+
+frowny_tile = pygame.Surface.copy(covered_tile)
+pygame.draw.circle(frowny_tile, YELLOW, (12,12), 9)
+pygame.draw.line(frowny_tile, BLACK, (7,8),(9,10))
+pygame.draw.line(frowny_tile, BLACK, (7,10),(9,8))
+pygame.draw.line(frowny_tile, BLACK, (14,8),(16,10))
+pygame.draw.line(frowny_tile, BLACK, (14,10),(16,8))
+pygame.draw.circle(frowny_tile, BLACK, (12,16), 2)
+
 
 mine_tile = pygame.Surface.copy(empty_tile)
 pygame.draw.line(mine_tile, BLACK, (5,18), (18,5), 3)
 pygame.draw.line(mine_tile, BLACK, (5,5), (18,18), 3)
-#pygame.draw.line(mine_tile, BLACK, (2,11), (21,11), 2)
-#pygame.draw.line(mine_tile, BLACK, (11,2), (11,21), 2)
-#pygame.draw.circle(mine_tile, BLACK, (12,12), 8)
-
 
 n_tiles = [empty_tile]
 
 for i in range(9):
     n_surf = font.render(str(i+1), True, num_colors[i])
     tile_surf = pygame.Surface.copy(empty_tile)
-    tile_surf.blit(n_surf,((tileSize-n_surf.get_width())//2, (tileSize-2-n_surf.get_height())//2))
+    tile_surf.blit(n_surf,div_vec(sub_vec((tileSize,tileSize-4),n_surf.get_size()),2))
     n_tiles.append(tile_surf)
 
 if __name__ == "__main__":
@@ -62,14 +71,11 @@ if __name__ == "__main__":
     root.fill(WHITE)
 
     x = 10
-    root.blit(smiley_tile, (x,0))
-    x += 30
-    root.blit(covered_tile, (x,0))
-    x += 30
-    root.blit(flagged_tile, (x,0))
-    x += 30
-    root.blit(mine_tile, (x,0))
-    x += 30
+    root.blit(smiley_tile, (x,0)); x += 30
+    root.blit(frowny_tile, (x,0)); x += 30
+    root.blit(covered_tile, (x,0)); x += 30
+    root.blit(flagged_tile, (x,0)); x += 30
+    root.blit(mine_tile, (x,0)); x += 30
     for tile in n_tiles:
         root.blit(tile, (x,0))
         x += 30
