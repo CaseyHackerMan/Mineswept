@@ -35,10 +35,7 @@ start_time = None
 won = False
 
 for x in range(fieldW):
-    row = [Tile() for y in range(fieldH)]
-    # for y in range(fieldH):
-    #     row.append(Tile())
-    field.append(row)
+    field.append([Tile() for y in range(fieldH)])
 
 root = pygame.display.set_mode((winW,winH))
 
@@ -236,6 +233,7 @@ while True:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     gen_field()
+                    
     else:
         for event in pygame.event.get():
             if event.type == pygame.QUIT: sys.exit()
