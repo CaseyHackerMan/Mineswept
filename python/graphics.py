@@ -1,6 +1,8 @@
 import pygame, sys
 
 tileSize = 24
+bannerHeight = 50
+field_pos = (0,bannerHeight)
 WHITE = pygame.Color("white")
 PINK = pygame.Color("fuchsia")
 RED = pygame.Color("red")
@@ -21,7 +23,7 @@ num_colors = [BLUE, DARK_GREEN, RED, DARK_BLUE, DARK_RED, CYAN, BLACK, DARK_GREY
 def add_vec(v1,v2): return (v1[0]+v2[0],v1[1]+v2[1])
 def sub_vec(v1,v2): return (v1[0]-v2[0],v1[1]-v2[1])
 def mul_vec(v,x): return (v[0]*x,v[1]*x)
-def div_vec(v,x): return (v[0]/x,v[1]/x)
+def div_vec(v,x): return (v[0]//x,v[1]//x)
 
 pygame.font.init()
 font = pygame.font.SysFont('Comic Sans MS', 20)
@@ -53,13 +55,11 @@ pygame.draw.line(frowny_tile, BLACK, (14,8),(16,10))
 pygame.draw.line(frowny_tile, BLACK, (14,10),(16,8))
 pygame.draw.circle(frowny_tile, BLACK, (12,16), 2)
 
-
 mine_tile = pygame.Surface.copy(empty_tile)
 pygame.draw.line(mine_tile, BLACK, (5,18), (18,5), 3)
 pygame.draw.line(mine_tile, BLACK, (5,5), (18,18), 3)
 
 n_tiles = [empty_tile]
-
 for i in range(9):
     n_surf = font.render(str(i+1), True, num_colors[i])
     tile_surf = pygame.Surface.copy(empty_tile)
@@ -77,8 +77,7 @@ if __name__ == "__main__":
     root.blit(flagged_tile, (x,0)); x += 30
     root.blit(mine_tile, (x,0)); x += 30
     for tile in n_tiles:
-        root.blit(tile, (x,0))
-        x += 30
+        root.blit(tile, (x,0)); x += 30
 
     while True:
         for event in pygame.event.get():
