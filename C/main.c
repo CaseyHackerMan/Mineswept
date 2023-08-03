@@ -1,4 +1,6 @@
-#include <SDL.h>
+#define SDL_MAIN_HANDLED
+
+#include "SDL.h"
 
 int main(int argc, char* argv[]) {
     SDL_Window *window = NULL;
@@ -16,7 +18,7 @@ int main(int argc, char* argv[]) {
 
     SDL_RenderClear(renderer);
 
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);  // Set the square color (white)
+    SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);  // Set the square color (white)
 
     SDL_Rect squareRect;
     squareRect.x = (screenWidth - squareSize) / 2;  // Center the square horizontally
