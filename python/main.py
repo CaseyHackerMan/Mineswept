@@ -42,7 +42,7 @@ argc = len(sys.argv)
 fieldW = int(sys.argv[1]) if (argc > 1) else 20
 fieldH = int(sys.argv[2]) if (argc > 2) else 20
 density = int(sys.argv[3]) if (argc > 3) else 15
-
+ 
 winW = fieldW*tileSize
 winH = fieldH*tileSize+bannerHeight
 
