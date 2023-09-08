@@ -81,12 +81,13 @@ def gen_field():
     for y in range(fieldH):
         for x in range(fieldW):
             tile = field[x][y]
+            redraw_f = tile.flag or not tile.covered
             tile.mine = density > random.randint(0,99)
             game.mines += tile.mine
             tile.covered = True
             tile.value = 0
             tile.flag = False
-            draw_tile(x,y)
+            if redraw_f: draw_tile(x,y)
     game.reset_time()
 
 def draw_banner():

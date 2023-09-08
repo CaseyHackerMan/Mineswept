@@ -14,9 +14,12 @@ int main(int argc, char* argv[]) {
 
     res = SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER);
     if (res) printf(SDL_GetError());
-
-    window = SDL_CreateWindow("Square Window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screenWidth, screenHeight, SDL_WINDOW_SHOWN);
+    
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY,"linear");
+    window = SDL_CreateWindow("Mineswept", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screenWidth, screenHeight, SDL_WINDOW_RESIZABLE);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    //SDL_WarpMouseInWindow(window, 50, 50); // move mouse
+
     GameAssets* assets = generate_assets(renderer);
 
     SDL_Rect squareRect;
@@ -42,7 +45,7 @@ int main(int argc, char* argv[]) {
                     break;
             }
         }
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);  // Set the background color (black)
+        SDL_SetRenderDrawColor(renderer, WHITE);  // Set the background color (black)
         SDL_RenderClear(renderer);
 
         Vector mouse_pos;
@@ -51,7 +54,13 @@ int main(int argc, char* argv[]) {
         squareRect.y = mouse_pos.y-TILE_SIZE;
         // SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
         // SDL_RenderFillRect(renderer, &squareRect);
-        SDL_RenderCopy(renderer, assets->empty_tile, &TILE_RECT, &squareRect);
+        SDL_RenderCopy(renderer, assets->empty_tile, NULL, &squareRect);
+        squareRect.x += TILE_SIZE;
+        SDL_RenderCopy(renderer, assets->covered_tile, NULL, &squareRect);
+        squareRect.x += TILE_SIZE;
+        SDL_RenderCopy(renderer, assets->flagged_tile, NULL, &squareRect);
+        squareRect.x += TILE_SIZE;
+        SDL_RenderCopy(renderer, assets->mine_tile, NULL, &squareRect);
         
         SDL_RenderPresent(renderer);
         SDL_Delay(30);
@@ -64,5 +73,6 @@ int main(int argc, char* argv[]) {
 
     SDL_Quit();
 
+    printf("Good ending\r\n");
     return 0;
 }
