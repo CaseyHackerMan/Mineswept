@@ -4,27 +4,28 @@
 #include "SDL.h"
 #include "main.h"
 #include "graphics.h"
+#include <time.h>
 
 int main(int argc, char* argv[]) {
-    SDL_Window *window = NULL;
-    SDL_Renderer *renderer = NULL;
     int res;
     int screenWidth = 640;  // Adjust these values as per your requirements
     int screenHeight = 480;
 
-    res = SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER);
+    res = SDL_Init(0);
     if (res) printf(SDL_GetError());
     
-    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY,"linear");
-    window = SDL_CreateWindow("Mineswept", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screenWidth, screenHeight, SDL_WINDOW_RESIZABLE);
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    // SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY,"linear");
+    SDL_Window* window = SDL_CreateWindow("Mineswept", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screenWidth, screenHeight, SDL_WINDOW_RESIZABLE);
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    SDL_Surface* root = SDL_GetWindowSurface(window);
     //SDL_WarpMouseInWindow(window, 50, 50); // move mouse
 
     GameAssets* assets = generate_assets(renderer);
+    if (assets == NULL) return 1;
 
     SDL_Rect squareRect;
-    squareRect.w = 20;
-    squareRect.h = 20;
+    squareRect.w = 24;
+    squareRect.h = 24;
 
     Tile myTile;
     myTile.mine = 1;
@@ -61,6 +62,12 @@ int main(int argc, char* argv[]) {
         SDL_RenderCopy(renderer, assets->flagged_tile, NULL, &squareRect);
         squareRect.x += TILE_SIZE;
         SDL_RenderCopy(renderer, assets->mine_tile, NULL, &squareRect);
+        squareRect.x += TILE_SIZE;
+        for (int i = 0; i < 9; i++) {
+            SDL_RenderCopy(renderer, assets->n_tiles[i], NULL, &squareRect);
+            squareRect.x += TILE_SIZE;
+        }
+
         
         SDL_RenderPresent(renderer);
         SDL_Delay(30);

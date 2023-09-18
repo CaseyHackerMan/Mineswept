@@ -1,49 +1,9 @@
 #include "graphics.h"
 #include "stdio.h"
+#include "string.h"
+#include "SDL.h"
+#include <sys/stat.h>
 
-GameAssets* generate_assets(SDL_Renderer* renderer) {
-    int res;
-    //if (res) printf(SDL_GetError());
-    SDL_Color n_colors[] = {BLUE, DARK_GREEN, RED, DARK_BLUE, DARK_RED, CYAN, BLACK, DARK_GREY, PINK};
-    GameAssets* assets = (GameAssets*) malloc(sizeof(GameAssets));
-
-    
-    SDL_Surface* empty_tile = SDL_CreateRGBSurface(0, TILE_SIZE, TILE_SIZE, 32, BLACK);
-    SDL_Surface* covered_tile = SDL_CreateRGBSurface(0, TILE_SIZE, TILE_SIZE, 32, BLACK);
-    if (empty_tile == NULL) printf(SDL_GetError());
-    if (covered_tile == NULL) printf(SDL_GetError());
-
-    SDL_FillRect(empty_tile, &(SDL_Rect) {1,1,TILE_SIZE-2,TILE_SIZE-2}, SDL_MapRGBA(empty_tile->format,LIGHT_GREY));
-
-    // probably inefficient
-    SDL_FillRect(covered_tile, &(SDL_Rect) {1,1,TILE_SIZE-2,TILE_SIZE-2}, SDL_MapRGBA(empty_tile->format,DARK_GREY));
-    SDL_FillRect(covered_tile, &(SDL_Rect) {3,3,TILE_SIZE-6,TILE_SIZE-6}, SDL_MapRGBA(empty_tile->format,GREY));
-
-    assets->empty_tile = SDL_CreateTextureFromSurface(renderer, empty_tile);
-    if (assets->empty_tile == NULL) printf(SDL_GetError());
-
-    assets->covered_tile = SDL_CreateTextureFromSurface(renderer, covered_tile);
-    if (assets->covered_tile == NULL) printf(SDL_GetError());
-    
-    assets->flagged_tile = SDL_CreateTextureFromSurface(renderer, empty_tile);
-    assets->mine_tile = SDL_CreateTextureFromSurface(renderer, empty_tile);
-    for (int i = 0; i < 9; i++) {
-        assets->n_tiles[i] = SDL_CreateTextureFromSurface(renderer, empty_tile);
-    }
-
-    SDL_FreeSurface(empty_tile);
-    return assets;
-}
-
-void free_assets(GameAssets* assets) {
-    SDL_DestroyTexture(assets->covered_tile);
-    SDL_DestroyTexture(assets->empty_tile);
-    SDL_DestroyTexture(assets->flagged_tile);
-    SDL_DestroyTexture(assets->mine_tile);
-    for (int i = 0; i < 9; i++)
-        SDL_DestroyTexture(assets->n_tiles[i]);
-    free(assets);
-}
 
 Vector* add_vec(Vector* v1, Vector* v2, Vector* res) {
     res->x = v1->x + v2->x;
@@ -67,4 +27,81 @@ Vector* div_vec(Vector* v, float a, Vector* res) {
     res->x = v->x/a;
     res->y = v->y/a;
     return res;
+}
+
+
+long read_num(FILE* file, int offset, char size) {
+    long res = 0;
+    fseek(file, offset, SEEK_SET);
+    fread(&res, size, 1, file);
+    return res;
+}
+
+SDL_Surface* load_bmp(SDL_Renderer* renderer, const char* path) {
+    FILE* asset = fopen(path,"rb");
+    if (asset == NULL) return NULL;
+    
+    struct stat sb;
+    if (stat(path, &sb) == -1) return NULL;
+    if (read_num(asset, 0, 2) != 19778) return NULL;
+    
+    int w = read_num(asset, 18, 4);
+    int h = read_num(asset, 22, 4);
+    int pix = read_num(asset, 10, 4);
+    int depth = read_num(asset, 28, 2);
+    int file_size = read_num(asset, 2, 4);
+    if (sb.st_size != file_size) return NULL;
+
+    SDL_Surface* surf = SDL_CreateRGBSurfaceWithFormat(0,w,h,depth,SDL_PIXELFORMAT_BGR24);
+    if (surf == NULL) return NULL;
+    fseek(asset, pix, SEEK_SET);
+    fread(surf->pixels, depth, w*h, asset);
+    
+    fclose(asset);
+    return surf;
+}
+
+SDL_Texture* asset_to_texture(SDL_Renderer* renderer, const char* name) {
+    char path[50] = "../assets/";
+    strncat(path, name, 40);
+    SDL_Surface* surf = load_bmp(renderer, path);
+    if (surf == NULL) {
+        printf("ERROR: failed to load asset \"%s\"\r\n", name);
+        exit(1);
+    }
+    SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
+    SDL_FreeSurface(surf);
+    return tex;
+}
+
+GameAssets* generate_assets(SDL_Renderer* renderer) {
+    int res;
+    // SDL_Color n_colors[] = {BLUE, DARK_GREEN, RED, DARK_BLUE, DARK_RED, CYAN, BLACK, DARK_GREY, PINK};
+    GameAssets* assets = (GameAssets*) malloc(sizeof(GameAssets));
+
+    assets->empty_tile = asset_to_texture(renderer,"empty_tile.bmp");
+    assets->covered_tile = asset_to_texture(renderer,"covered_tile.bmp");
+    assets->flagged_tile = asset_to_texture(renderer,"flagged_tile.bmp");
+    assets->mine_tile = asset_to_texture(renderer,"mine_tile.bmp");
+    assets->n_tiles[0] = asset_to_texture(renderer,"one_tile.bmp");
+    assets->n_tiles[1] = asset_to_texture(renderer,"two_tile.bmp");
+    assets->n_tiles[2] = asset_to_texture(renderer,"three_tile.bmp");
+    assets->n_tiles[3] = asset_to_texture(renderer,"four_tile.bmp");
+    assets->n_tiles[4] = asset_to_texture(renderer,"five_tile.bmp");
+    assets->n_tiles[5] = asset_to_texture(renderer,"six_tile.bmp");
+    assets->n_tiles[6] = asset_to_texture(renderer,"seven_tile.bmp");
+    assets->n_tiles[7] = asset_to_texture(renderer,"eight_tile.bmp");
+    assets->n_tiles[8] = asset_to_texture(renderer,"nine_tile.bmp");
+
+    return assets;
+}
+
+void free_assets(GameAssets* assets) {
+    SDL_DestroyTexture(assets->covered_tile);
+    SDL_DestroyTexture(assets->empty_tile);
+    SDL_DestroyTexture(assets->flagged_tile);
+    SDL_DestroyTexture(assets->mine_tile);
+    for (int i = 0; i < 9; i++)
+        SDL_DestroyTexture(assets->n_tiles[i]);
+    free(assets);
 }

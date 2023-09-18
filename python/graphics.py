@@ -67,6 +67,20 @@ for i in range(9):
     n_tiles.append(tile_surf)
 
 if __name__ == "__main__":
+    pygame.image.save(empty_tile, "assets/empty_tile.bmp")
+    pygame.image.save(covered_tile, "assets/covered_tile.bmp")
+    pygame.image.save(mine_tile, "assets/mine_tile.bmp")
+    pygame.image.save(flagged_tile, "assets/flagged_tile.bmp")
+    pygame.image.save(n_tiles[1], "assets/one_tile.bmp")
+    pygame.image.save(n_tiles[2], "assets/two_tile.bmp")
+    pygame.image.save(n_tiles[3], "assets/three_tile.bmp")
+    pygame.image.save(n_tiles[4], "assets/four_tile.bmp")
+    pygame.image.save(n_tiles[5], "assets/five_tile.bmp")
+    pygame.image.save(n_tiles[6], "assets/six_tile.bmp")
+    pygame.image.save(n_tiles[7], "assets/seven_tile.bmp")
+    pygame.image.save(n_tiles[8], "assets/eight_tile.bmp")
+    pygame.image.save(n_tiles[9], "assets/nine_tile.bmp")
+
     root = pygame.display.set_mode((500,100))
     root.fill(WHITE)
 
