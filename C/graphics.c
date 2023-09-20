@@ -75,33 +75,28 @@ SDL_Texture* asset_to_texture(SDL_Renderer* renderer, const char* name) {
 }
 
 GameAssets* generate_assets(SDL_Renderer* renderer) {
-    int res;
-    // SDL_Color n_colors[] = {BLUE, DARK_GREEN, RED, DARK_BLUE, DARK_RED, CYAN, BLACK, DARK_GREY, PINK};
     GameAssets* assets = (GameAssets*) malloc(sizeof(GameAssets));
-
-    assets->empty_tile = asset_to_texture(renderer,"empty_tile.bmp");
     assets->covered_tile = asset_to_texture(renderer,"covered_tile.bmp");
     assets->flagged_tile = asset_to_texture(renderer,"flagged_tile.bmp");
     assets->mine_tile = asset_to_texture(renderer,"mine_tile.bmp");
-    assets->n_tiles[0] = asset_to_texture(renderer,"one_tile.bmp");
-    assets->n_tiles[1] = asset_to_texture(renderer,"two_tile.bmp");
-    assets->n_tiles[2] = asset_to_texture(renderer,"three_tile.bmp");
-    assets->n_tiles[3] = asset_to_texture(renderer,"four_tile.bmp");
-    assets->n_tiles[4] = asset_to_texture(renderer,"five_tile.bmp");
-    assets->n_tiles[5] = asset_to_texture(renderer,"six_tile.bmp");
-    assets->n_tiles[6] = asset_to_texture(renderer,"seven_tile.bmp");
-    assets->n_tiles[7] = asset_to_texture(renderer,"eight_tile.bmp");
-    assets->n_tiles[8] = asset_to_texture(renderer,"nine_tile.bmp");
-
+    assets->n_tiles[0] = asset_to_texture(renderer,"empty_tile.bmp");
+    assets->n_tiles[1] = asset_to_texture(renderer,"one_tile.bmp");
+    assets->n_tiles[2] = asset_to_texture(renderer,"two_tile.bmp");
+    assets->n_tiles[3] = asset_to_texture(renderer,"three_tile.bmp");
+    assets->n_tiles[4] = asset_to_texture(renderer,"four_tile.bmp");
+    assets->n_tiles[5] = asset_to_texture(renderer,"five_tile.bmp");
+    assets->n_tiles[6] = asset_to_texture(renderer,"six_tile.bmp");
+    assets->n_tiles[7] = asset_to_texture(renderer,"seven_tile.bmp");
+    assets->n_tiles[8] = asset_to_texture(renderer,"eight_tile.bmp");
+    assets->n_tiles[9] = asset_to_texture(renderer,"nine_tile.bmp");
     return assets;
 }
 
 void free_assets(GameAssets* assets) {
     SDL_DestroyTexture(assets->covered_tile);
-    SDL_DestroyTexture(assets->empty_tile);
     SDL_DestroyTexture(assets->flagged_tile);
     SDL_DestroyTexture(assets->mine_tile);
-    for (int i = 0; i < 9; i++)
+    for (int i = 0; i < 10; i++)
         SDL_DestroyTexture(assets->n_tiles[i]);
     free(assets);
 }

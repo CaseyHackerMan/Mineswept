@@ -1,5 +1,8 @@
 #include "SDL.h"
 
+#ifndef GRAPHICS_H
+#define GRAPHICS_H
+
 #define TILE_SIZE 24
 #define BANNER_HEIGHT 50
 #define FIELD_POS (Vector) {0, BANNERHEIGHT}
@@ -26,11 +29,10 @@ typedef struct vector {
 } Vector;
 
 typedef struct assets {
-    SDL_Texture* empty_tile;
     SDL_Texture* covered_tile;
     SDL_Texture* flagged_tile;
     SDL_Texture* mine_tile;
-    SDL_Texture* n_tiles[9];
+    SDL_Texture* n_tiles[10];
 } GameAssets;
 
 Vector* add_vec(Vector* v1, Vector* v2, Vector* res);
@@ -40,3 +42,5 @@ Vector* div_vec(Vector* v, float a, Vector* res);
 
 void free_assets(GameAssets* ptr);
 GameAssets* generate_assets();
+
+#endif

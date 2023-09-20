@@ -6,6 +6,34 @@
 #include "graphics.h"
 #include <time.h>
 
+void draw_tile(Rendering* rendering, Minefield* field, Vector ind) {
+    Tile tile = field->arr[field->width*ind.y + ind.x];
+    GameAssets* assets = rendering->assets;
+    SDL_Texture* tex;
+
+    if (tile.covered) {
+        if (tile.flag) tex = assets->flagged_tile;
+        else tex = assets->covered_tile;
+    } else {
+        if (tile.mine) tex = assets->mine_tile;
+        else tex = assets->n_tiles[tile.value-1];
+    }
+    SDL_Rect dest_rect;
+    Vector* dest = (Vector*) &dest_rect;
+    mul_vec(&ind, TILE_SIZE, dest);
+    add_vec(dest, &rendering->origin, dest);
+    dest->y += BANNER_HEIGHT;
+    dest_rect.w = TILE_SIZE; 
+    dest_rect.h = TILE_SIZE; 
+    SDL_RenderCopy(rendering->renderer, tex, NULL, &dest_rect);
+    SDL_RenderPresent(rendering->renderer);
+    SDL_Delay(5);
+}
+
+void gen_field(Rendering* rendering, Game* game, int density) {
+    return;
+}
+
 int main(int argc, char* argv[]) {
     int res;
     int screenWidth = 640;  // Adjust these values as per your requirements
@@ -21,7 +49,10 @@ int main(int argc, char* argv[]) {
     //SDL_WarpMouseInWindow(window, 50, 50); // move mouse
 
     GameAssets* assets = generate_assets(renderer);
-    if (assets == NULL) return 1;
+    if (assets == NULL) {
+        printf("ERROR: failed to generate assets\r\n");
+        return 1;
+    }
 
     SDL_Rect squareRect;
     squareRect.w = 24;
@@ -33,6 +64,11 @@ int main(int argc, char* argv[]) {
     myTile.flag = 1;
     myTile.value = 10;
     SDL_Event e;
+
+    Minefield field;
+    field.width = 25;
+    field.height = 20;
+    field.arr = (Tile*) malloc(sizeof(Tile)*field.width*field.height);
 
     char running = 1;
     while (running) {
@@ -55,15 +91,13 @@ int main(int argc, char* argv[]) {
         squareRect.y = mouse_pos.y-TILE_SIZE;
         // SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
         // SDL_RenderFillRect(renderer, &squareRect);
-        SDL_RenderCopy(renderer, assets->empty_tile, NULL, &squareRect);
-        squareRect.x += TILE_SIZE;
         SDL_RenderCopy(renderer, assets->covered_tile, NULL, &squareRect);
         squareRect.x += TILE_SIZE;
         SDL_RenderCopy(renderer, assets->flagged_tile, NULL, &squareRect);
         squareRect.x += TILE_SIZE;
         SDL_RenderCopy(renderer, assets->mine_tile, NULL, &squareRect);
         squareRect.x += TILE_SIZE;
-        for (int i = 0; i < 9; i++) {
+        for (int i = 0; i < 10; i++) {
             SDL_RenderCopy(renderer, assets->n_tiles[i], NULL, &squareRect);
             squareRect.x += TILE_SIZE;
         }
@@ -76,6 +110,7 @@ int main(int argc, char* argv[]) {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 
+    free(field.arr);
     free_assets(assets);
 
     SDL_Quit();
