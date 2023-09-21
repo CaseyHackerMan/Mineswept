@@ -8,10 +8,10 @@
 #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
 
 typedef struct tile {
-    char mine    : 1;
-    char covered : 1;
-    char flag    : 1;
-    char value   : 4;
+    unsigned char mine    : 1;
+    unsigned char covered : 1;
+    unsigned char flag    : 1;
+    unsigned char value   : 4;
 } Tile;
 
 typedef struct minefield {

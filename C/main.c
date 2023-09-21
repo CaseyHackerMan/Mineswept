@@ -7,6 +7,7 @@
 #include <time.h>
 
 void draw_tile(Rendering* rendering, Tile* tile, int x, int y) {
+    // printf("X=%i Y=%i Tile(c=%i, m=%i, f=%i, v=%i)\r\n", x,y,tile->covered,tile->mine,tile->flag,tile->value);
     GameAssets* assets = rendering->assets;
     SDL_Texture* tex;
 
@@ -15,7 +16,7 @@ void draw_tile(Rendering* rendering, Tile* tile, int x, int y) {
         else tex = assets->covered_tile;
     } else {
         if (tile->mine) tex = assets->mine_tile;
-        else tex = assets->n_tiles[tile->value-1];
+        else tex = assets->n_tiles[tile->value];
     }
     SDL_Rect dest_rect;
     Vector* dest = (Vector*) &dest_rect;
@@ -55,9 +56,14 @@ void reset_game(Game* game) {
 
 char get_neighbors(Minefield* field, int x, int y, Vector neighbors[9]) {
     char n = 0;
-    for (int j = MAX(0,y-1); j < MIN(y+1, field->height); j++)
-        for (int i = MAX(0,x-1); i < MIN(x+1, field->width); i++)
+    for (int j = MAX(0,y-1); j < MIN(y+2, field->height); j++)
+        for (int i = MAX(0,x-1); i < MIN(x+2, field->width); i++)
             neighbors[n++] = (Vector) {i,j};
+    printf("neigh: [");
+    for (int i = 0; i < n; i++) {
+        printf("{%i,%i}, ", neighbors[i].x, neighbors[i].y);
+    }
+    printf("]\r\n");
     return n;
 }
 
@@ -152,8 +158,17 @@ int main(int argc, char* argv[]) {
     field.height = 20;
     field.arr = (Tile*) malloc(sizeof(Tile)*field.width*field.height);
 
+    Rendering rendering;
+    rendering.origin = (Vector) {BORDER_WIDTH,BORDER_WIDTH};
+
+    SDL_Rect bannerRect;
+    bannerRect.x = rendering.origin.x;
+    bannerRect.y = rendering.origin.y;
+    bannerRect.w = field.width*TILE_SIZE;
+    bannerRect.h = BANNER_HEIGHT;
+
     int res;
-    int screenWidth = field.width*TILE_SIZE + BORDER_WIDTH*2;
+    int screenWidth = bannerRect.w + BORDER_WIDTH*2;
     int screenHeight = field.height*TILE_SIZE + BANNER_HEIGHT + BORDER_WIDTH*2;
 
     res = SDL_Init(0);
@@ -180,10 +195,8 @@ int main(int argc, char* argv[]) {
     myTile.value = 10;
     SDL_Event e;
 
-    Rendering rendering;
     rendering.renderer = renderer;
     rendering.assets = assets;
-    rendering.origin = (Vector) {BORDER_WIDTH,BORDER_WIDTH};
 
     Game game;
     game.tile_count = field.width*field.height;
@@ -213,15 +226,25 @@ int main(int argc, char* argv[]) {
                             right_click(&rendering, &game, &field, sel_x, sel_y);
                     }
                     break;
+                case SDL_KEYDOWN:
+                    if (e.key.keysym.sym == SDLK_SPACE)
+                        reset_game(&game);
+                        gen_field(&rendering, &game, &field, 10);
             }
         }
 
+
+
         // Vector mouse_pos;
         // SDL_GetMouseState(&mouse_pos.x, &mouse_pos.y);
-        // squareRect.x = mouse_pos.x-TILE_SIZE;
-        // squareRect.y = mouse_pos.y-TILE_SIZE;
-        // // SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
-        // // SDL_RenderFillRect(renderer, &squareRect);
+        if (game.playing)
+            SDL_SetRenderDrawColor(renderer, WHITE);
+        else if (game.won)
+            SDL_SetRenderDrawColor(renderer, GREEN);
+        else
+            SDL_SetRenderDrawColor(renderer, RED);
+        
+        SDL_RenderFillRect(renderer, &bannerRect);
         // SDL_RenderCopy(renderer, assets->covered_tile, NULL, &squareRect);
         // squareRect.x += TILE_SIZE;
         // SDL_RenderCopy(renderer, assets->flagged_tile, NULL, &squareRect);
