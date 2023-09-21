@@ -5,6 +5,7 @@
 
 #define TILE_SIZE 24
 #define BANNER_HEIGHT 50
+#define BORDER_WIDTH 10
 #define FIELD_POS (Vector) {0, BANNERHEIGHT}
 #define TILE_RECT (SDL_Rect) {0, 0, TILE_SIZE, TILE_SIZE}
 #define PIX_FORMAT 
@@ -37,8 +38,6 @@ typedef struct assets {
 
 Vector* add_vec(Vector* v1, Vector* v2, Vector* res);
 Vector* sub_vec(Vector* v1, Vector* v2, Vector* res);
-Vector* mul_vec(Vector* v, float a, Vector* res);
-Vector* div_vec(Vector* v, float a, Vector* res);
 
 void free_assets(GameAssets* ptr);
 GameAssets* generate_assets();

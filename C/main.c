@@ -6,21 +6,21 @@
 #include "graphics.h"
 #include <time.h>
 
-void draw_tile(Rendering* rendering, Minefield* field, Vector ind) {
-    Tile tile = field->arr[field->width*ind.y + ind.x];
+void draw_tile(Rendering* rendering, Tile* tile, int x, int y) {
     GameAssets* assets = rendering->assets;
     SDL_Texture* tex;
 
-    if (tile.covered) {
-        if (tile.flag) tex = assets->flagged_tile;
+    if (tile->covered) {
+        if (tile->flag) tex = assets->flagged_tile;
         else tex = assets->covered_tile;
     } else {
-        if (tile.mine) tex = assets->mine_tile;
-        else tex = assets->n_tiles[tile.value-1];
+        if (tile->mine) tex = assets->mine_tile;
+        else tex = assets->n_tiles[tile->value-1];
     }
     SDL_Rect dest_rect;
     Vector* dest = (Vector*) &dest_rect;
-    mul_vec(&ind, TILE_SIZE, dest);
+    dest_rect.x = x*TILE_SIZE;
+    dest_rect.y = y*TILE_SIZE;
     add_vec(dest, &rendering->origin, dest);
     dest->y += BANNER_HEIGHT;
     dest_rect.w = TILE_SIZE; 
@@ -30,14 +30,131 @@ void draw_tile(Rendering* rendering, Minefield* field, Vector ind) {
     SDL_Delay(5);
 }
 
-void gen_field(Rendering* rendering, Game* game, int density) {
-    return;
+void gen_field(Rendering* rendering, Game* game, Minefield* field, int density) {
+    Tile* curr = field->arr;
+    for (int y = 0; y < field->height; y++) {
+        for (int x = 0; x < field->width; x++) {
+            *(char*) curr = 2 + (rand() % 100 < density);
+            game->mines += curr->mine;
+            draw_tile(rendering, curr, x, y);
+            curr++;
+        }
+    }
+}
+
+void reset_game(Game* game) {
+    game->won = 0;
+    game->timer = 0;
+    game->flags = 0;
+    game->mines = 0;
+    game->playing = 1;
+    game->correct_flags = 0;
+    game->covered_tiles = game->tile_count;
+    game->start_time = time(NULL);
+}
+
+char get_neighbors(Minefield* field, int x, int y, Vector neighbors[9]) {
+    char n = 0;
+    for (int j = MAX(0,y-1); j < MIN(y+1, field->height); j++)
+        for (int i = MAX(0,x-1); i < MIN(x+1, field->width); i++)
+            neighbors[n++] = (Vector) {i,j};
+    return n;
+}
+
+Tile* get_tile(Minefield* field, int x, int y) {
+    if (x >= 0 && x < field->width && y >= 0 && y < field->height)
+        return field->arr + field->width*y + x;
+    return NULL;
+}
+
+void reveal(Rendering* rendering, Game* game, Minefield* field, Tile* tile, int x, int y) {
+    if (!tile->covered) return;
+
+    tile->covered = 0;
+    game->covered_tiles--;
+
+    Vector neighs[9];
+    char n = get_neighbors(field, x, y, neighs);
+    for (int i = 0; i < n; i++) 
+        tile->value += get_tile(field, neighs[i].x, neighs[i].y)->mine;
+    
+    draw_tile(rendering, tile, x, y);
+
+    if (tile->mine) {
+        game->playing = 0;
+        game->won = 0;
+        return;
+    }
+    if (game->covered_tiles == game->mines) {
+        game->playing = 0;
+        game->won = 1;
+    }
+
+    if (tile->value == 0)
+        for (int i = 0; i < n; i++) {
+            Tile* t = get_tile(field, neighs[i].x, neighs[i].y);
+            reveal(rendering, game, field, t, neighs[i].x, neighs[i].y);
+        }
+}
+
+void flag(Game* game, Tile* tile, int x, int y) {
+    tile->flag = 1;
+    game->flags++;
+    if (tile->mine) {
+        game->correct_flags++;
+        char all_mines_flagged = game->correct_flags == game->mines;
+        char all_flags_correct = game->flags == game->correct_flags;
+        if (all_mines_flagged && all_flags_correct) {
+            game->playing = 0;
+            game->won = 1;
+        }
+    }
+}
+
+void unflag(Game* game, Tile* tile, int x, int y) {
+    tile->flag = 0;
+    game->flags--;
+    if (tile->mine) game->correct_flags--;
+    else {
+        char all_mines_flagged = game->correct_flags == game->mines;
+        char all_flags_correct = game->flags == game->correct_flags;
+        if (all_mines_flagged && all_flags_correct) {
+            game->playing = 0;
+            game->won = 1;
+        }
+    }
+}
+
+void left_click(Rendering* rendering, Game* game, Minefield* field, int x, int y) {
+    Tile* tile = get_tile(field, x, y);
+    if (tile == NULL || tile->flag) return;
+    if (tile->covered) reveal(rendering, game, field, tile, x, y);
+    // else quick_reveal(renderering, game, field, x, y);
+}
+
+void right_click(Rendering* rendering, Game* game, Minefield* field, int x, int y) {
+    Tile* tile = get_tile(field, x, y);
+    if (tile == NULL) return;
+
+    if (tile->covered) {
+        if (tile->flag) unflag(game, tile, x, y);
+        else flag(game, tile, x, y);
+        draw_tile(rendering, tile, x, y);
+    }
+    // else quick_flag(renderering, game, field, x, y);
 }
 
 int main(int argc, char* argv[]) {
+    srand(time(NULL));
+
+    Minefield field;
+    field.width = 25;
+    field.height = 20;
+    field.arr = (Tile*) malloc(sizeof(Tile)*field.width*field.height);
+
     int res;
-    int screenWidth = 640;  // Adjust these values as per your requirements
-    int screenHeight = 480;
+    int screenWidth = field.width*TILE_SIZE + BORDER_WIDTH*2;
+    int screenHeight = field.height*TILE_SIZE + BANNER_HEIGHT + BORDER_WIDTH*2;
 
     res = SDL_Init(0);
     if (res) printf(SDL_GetError());
@@ -54,10 +171,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    SDL_Rect squareRect;
-    squareRect.w = 24;
-    squareRect.h = 24;
-
+    SDL_Rect squareRect = TILE_RECT;
+    
     Tile myTile;
     myTile.mine = 1;
     myTile.covered = 1;
@@ -65,44 +180,59 @@ int main(int argc, char* argv[]) {
     myTile.value = 10;
     SDL_Event e;
 
-    Minefield field;
-    field.width = 25;
-    field.height = 20;
-    field.arr = (Tile*) malloc(sizeof(Tile)*field.width*field.height);
+    Rendering rendering;
+    rendering.renderer = renderer;
+    rendering.assets = assets;
+    rendering.origin = (Vector) {BORDER_WIDTH,BORDER_WIDTH};
+
+    Game game;
+    game.tile_count = field.width*field.height;
+    reset_game(&game);
+
+    SDL_SetRenderDrawColor(renderer, WHITE);  // Set the background color (black)
+    SDL_RenderClear(renderer);
+    gen_field(&rendering, &game, &field, 5);
 
     char running = 1;
     while (running) {
+        int sel_x, sel_y;
+        
         while(SDL_PollEvent(&e)){
             switch(e.type){
                 case SDL_QUIT:
                     running = 0;
                     break;
                 case SDL_MOUSEBUTTONDOWN:
-                    printf("X: %i, Y: %i\r\n", e.button.x, e.button.y);
+                    sel_x = (e.button.x - rendering.origin.x)/TILE_SIZE;
+                    sel_y = (e.button.y - rendering.origin.y - BANNER_HEIGHT)/TILE_SIZE;
+                    printf("X: %i, Y: %i\r\n", sel_x, sel_y);
+                    if (game.playing) {
+                        if (e.button.button == SDL_BUTTON_LEFT)
+                            left_click(&rendering, &game, &field, sel_x, sel_y);
+                        else if (e.button.button == SDL_BUTTON_RIGHT)
+                            right_click(&rendering, &game, &field, sel_x, sel_y);
+                    }
                     break;
             }
         }
-        SDL_SetRenderDrawColor(renderer, WHITE);  // Set the background color (black)
-        SDL_RenderClear(renderer);
 
-        Vector mouse_pos;
-        SDL_GetMouseState(&mouse_pos.x, &mouse_pos.y);
-        squareRect.x = mouse_pos.x-TILE_SIZE;
-        squareRect.y = mouse_pos.y-TILE_SIZE;
-        // SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
-        // SDL_RenderFillRect(renderer, &squareRect);
-        SDL_RenderCopy(renderer, assets->covered_tile, NULL, &squareRect);
-        squareRect.x += TILE_SIZE;
-        SDL_RenderCopy(renderer, assets->flagged_tile, NULL, &squareRect);
-        squareRect.x += TILE_SIZE;
-        SDL_RenderCopy(renderer, assets->mine_tile, NULL, &squareRect);
-        squareRect.x += TILE_SIZE;
-        for (int i = 0; i < 10; i++) {
-            SDL_RenderCopy(renderer, assets->n_tiles[i], NULL, &squareRect);
-            squareRect.x += TILE_SIZE;
-        }
+        // Vector mouse_pos;
+        // SDL_GetMouseState(&mouse_pos.x, &mouse_pos.y);
+        // squareRect.x = mouse_pos.x-TILE_SIZE;
+        // squareRect.y = mouse_pos.y-TILE_SIZE;
+        // // SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
+        // // SDL_RenderFillRect(renderer, &squareRect);
+        // SDL_RenderCopy(renderer, assets->covered_tile, NULL, &squareRect);
+        // squareRect.x += TILE_SIZE;
+        // SDL_RenderCopy(renderer, assets->flagged_tile, NULL, &squareRect);
+        // squareRect.x += TILE_SIZE;
+        // SDL_RenderCopy(renderer, assets->mine_tile, NULL, &squareRect);
+        // squareRect.x += TILE_SIZE;
+        // for (int i = 0; i < 10; i++) {
+        //     SDL_RenderCopy(renderer, assets->n_tiles[i], NULL, &squareRect);
+        //     squareRect.x += TILE_SIZE;
+        // }
 
-        
         SDL_RenderPresent(renderer);
         SDL_Delay(30);
     }

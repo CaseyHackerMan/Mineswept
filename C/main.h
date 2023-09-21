@@ -4,6 +4,9 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
+#define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
+
 typedef struct tile {
     char mine    : 1;
     char covered : 1;
@@ -20,7 +23,6 @@ typedef struct minefield {
 typedef struct game {
     clock_t timer;
     clock_t start_time;
-    Minefield* field;
     int tile_count;
     int mines;
     int flags;
@@ -36,8 +38,16 @@ typedef struct rendering {
     Vector origin;
 } Rendering;
 
-void draw_tile(Rendering* rendering, Minefield* field, Vector ind);
-void gen_field(Rendering* rendering, Game* game, int density);
+Tile* get_tile(Minefield* field, int x, int y);
+char get_neighbors(Minefield* field, int x, int y, Vector neighbors[9]);
+void draw_tile(Rendering* rendering, Tile* tile, int x, int y);
+void reveal(Rendering* rendering, Game* game, Minefield* field, Tile* tile, int x, int y);
+void flag(Game* game, Tile* tile, int x, int y);
+void unflag(Game* game, Tile* tile, int x, int y);
+void reset_game(Game* game);
+void gen_field(Rendering* rendering, Game* game, Minefield* field, int density);
+void left_click(Rendering* rendering, Game* game, Minefield* field, int x, int y);
+void right_click(Rendering* rendering, Game* game, Minefield* field, int x, int y);
 int main(int argc, char* argv[]);
 
 #endif

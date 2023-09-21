@@ -17,19 +17,6 @@ Vector* sub_vec(Vector* v1, Vector* v2, Vector* res) {
     return res;
 }
 
-Vector* mul_vec(Vector* v, float a, Vector* res) {
-    res->x = v->x*a;
-    res->y = v->y*a;
-    return res;
-}
-
-Vector* div_vec(Vector* v, float a, Vector* res) {
-    res->x = v->x/a;
-    res->y = v->y/a;
-    return res;
-}
-
-
 long read_num(FILE* file, int offset, char size) {
     long res = 0;
     fseek(file, offset, SEEK_SET);
