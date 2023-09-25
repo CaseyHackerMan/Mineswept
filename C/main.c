@@ -67,10 +67,44 @@ char get_neighbors(Minefield* field, int x, int y, Vector neighbors[9]) {
     return n;
 }
 
+char check_tile(Minefield* field, int x, int y) {
+    return x >= 0 && x < field->width && y >= 0 && y < field->height;
+}
+
 Tile* get_tile(Minefield* field, int x, int y) {
-    if (x >= 0 && x < field->width && y >= 0 && y < field->height)
-        return field->arr + field->width*y + x;
-    return NULL;
+    return field->arr + field->width*y + x;
+}
+
+void quick_reveal(Rendering* rendering, Game* game, Minefield* field, Tile* tile, int x, int y) {
+    Vector neighs[9];
+    Tile* tiles[9];
+    char n = get_neighbors(field, x, y, neighs);
+    int n_flagged = 0;
+    for (int i = 0; i < n; i++) {
+        tiles[i] = get_tile(field, neighs[i].x, neighs[i].y);
+        n_flagged += tiles[i]->flag;
+    }
+
+    if (n_flagged >= tile->value)
+        for (int i = 0; i < n; i++)
+            if (tiles[i]->covered && !tiles[i]->flag)
+                reveal(rendering, game, field, tiles[i], neighs[i].x, neighs[i].y);
+}
+
+void quick_flag(Rendering* rendering, Game* game, Minefield* field, Tile* tile, int x, int y) {
+    Vector neighs[9];
+    Tile* tiles[9];
+    char n = get_neighbors(field, x, y, neighs);
+    int n_covered = 0;
+    for (int i = 0; i < n; i++) {
+        tiles[i] = get_tile(field, neighs[i].x, neighs[i].y);
+        n_covered += tiles[i]->covered;
+    }
+
+    if (n_covered <= tile->value)
+        for (int i = 0; i < n; i++)
+            if (tiles[i]->covered && !tiles[i]->flag)
+                flag(rendering, game, tiles[i], neighs[i].x, neighs[i].y);
 }
 
 void reveal(Rendering* rendering, Game* game, Minefield* field, Tile* tile, int x, int y) {
@@ -103,7 +137,7 @@ void reveal(Rendering* rendering, Game* game, Minefield* field, Tile* tile, int 
         }
 }
 
-void flag(Game* game, Tile* tile, int x, int y) {
+void flag(Rendering* rendering, Game* game, Tile* tile, int x, int y) {
     tile->flag = 1;
     game->flags++;
     if (tile->mine) {
@@ -115,9 +149,10 @@ void flag(Game* game, Tile* tile, int x, int y) {
             game->won = 1;
         }
     }
+    draw_tile(rendering, tile, x, y);
 }
 
-void unflag(Game* game, Tile* tile, int x, int y) {
+void unflag(Rendering* rendering, Game* game, Tile* tile, int x, int y) {
     tile->flag = 0;
     game->flags--;
     if (tile->mine) game->correct_flags--;
@@ -129,25 +164,27 @@ void unflag(Game* game, Tile* tile, int x, int y) {
             game->won = 1;
         }
     }
+    draw_tile(rendering, tile, x, y);
 }
 
 void left_click(Rendering* rendering, Game* game, Minefield* field, int x, int y) {
-    Tile* tile = get_tile(field, x, y);
-    if (tile == NULL || tile->flag) return;
-    if (tile->covered) reveal(rendering, game, field, tile, x, y);
-    // else quick_reveal(renderering, game, field, x, y);
+    if (check_tile(field, x, y)) {
+        Tile* tile = get_tile(field, x, y);
+        if (tile->flag) return;
+        if (tile->covered) reveal(rendering, game, field, tile, x, y);
+        else quick_reveal(rendering, game, field, tile, x, y);
+    }
 }
 
 void right_click(Rendering* rendering, Game* game, Minefield* field, int x, int y) {
-    Tile* tile = get_tile(field, x, y);
-    if (tile == NULL) return;
-
-    if (tile->covered) {
-        if (tile->flag) unflag(game, tile, x, y);
-        else flag(game, tile, x, y);
-        draw_tile(rendering, tile, x, y);
+    if (check_tile(field, x, y)) {
+        Tile* tile = get_tile(field, x, y);
+        if (tile->covered) {
+            if (tile->flag) unflag(rendering, game, tile, x, y);
+            else flag(rendering, game, tile, x, y);
+        }
+        else quick_flag(rendering, game, field, tile, x, y);
     }
-    // else quick_flag(renderering, game, field, x, y);
 }
 
 int main(int argc, char* argv[]) {
@@ -204,7 +241,7 @@ int main(int argc, char* argv[]) {
 
     SDL_SetRenderDrawColor(renderer, WHITE);  // Set the background color (black)
     SDL_RenderClear(renderer);
-    gen_field(&rendering, &game, &field, 5);
+    gen_field(&rendering, &game, &field, 15);
 
     char running = 1;
     while (running) {

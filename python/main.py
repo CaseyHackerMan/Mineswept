@@ -42,7 +42,7 @@ argc = len(sys.argv)
 fieldW = int(sys.argv[1]) if (argc > 1) else 20
 fieldH = int(sys.argv[2]) if (argc > 2) else 20
 density = int(sys.argv[3]) if (argc > 3) else 15
- 
+
 winW = fieldW*tileSize
 winH = fieldH*tileSize+bannerHeight
 
@@ -147,9 +147,7 @@ def reveal(x,y):
 
 def quick_flag(x,y):
     neighs = get_neighbors(x,y)
-    c = 0
-    for x1,y1 in neighs:
-        c += field[x1][y1].covered
+    c = sum(field[x1][y1].covered for x1,y1 in neighs)
 
     if c <= field[x][y].value:
         for x1,y1 in neighs:
@@ -184,9 +182,7 @@ def unflag(x,y):
 
 def quick_reveal(x,y):
     neighs = get_neighbors(x,y)
-    c = 0
-    for x1,y1 in neighs:
-        c += field[x1][y1].flag
+    c = sum(field[x1][y1].flag for x1,y1 in neighs)
 
     if c >= field[x][y].value:
         for x1,y1 in neighs:
