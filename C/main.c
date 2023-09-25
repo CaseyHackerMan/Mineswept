@@ -21,72 +21,69 @@ void draw_tile(Rendering* rendering, Tile* tile, int x, int y) {
     }
     SDL_Rect dest_rect;
     Vector* dest = (Vector*) &dest_rect;
-    dest_rect.x = x*TILE_SIZE;
-    dest_rect.y = y*TILE_SIZE;
-    add_vec(dest, &rendering->origin, dest);
-    dest->y += BANNER_HEIGHT;
+    dest_rect.x = rendering->field_rect->x + x*TILE_SIZE;
+    dest_rect.y = rendering->field_rect->y + y*TILE_SIZE;
     dest_rect.w = TILE_SIZE; 
     dest_rect.h = TILE_SIZE; 
     SDL_RenderCopy(rendering->renderer, tex, NULL, &dest_rect);
     SDL_RenderPresent(rendering->renderer);
     SDL_Delay(5);
+    tile->drawn = 1;
 }
 
-void gen_field(Rendering* rendering, Game* game, Minefield* field, int density) {
+void draw_field(Rendering* rendering, Minefield* field) {
     Tile* curr = field->arr;
     for (int y = 0; y < field->height; y++) {
         for (int x = 0; x < field->width; x++) {
-            *(char*) curr = 2 + (rand() % 100 < density);
-            game->mines += curr->mine;
-            draw_tile(rendering, curr, x, y);
+            if (!curr->drawn)
+                draw_tile(rendering, curr, x, y);
             curr++;
         }
     }
 }
 
-void reset_game(Game* game) {
+void reset_game(Game* game, Minefield* field) {
     game->won = 0;
     game->timer = 0;
     game->flags = 0;
-    game->mines = 0;
     game->playing = 1;
     game->correct_flags = 0;
     game->covered_tiles = game->tile_count;
     game->start_time = time(NULL);
+    game->mines = gen_field(field, game->density);
 }
 
 void reveal(Rendering* rendering, Game* game, Minefield* field, Tile* tile, int x, int y) {
     if (!tile->covered) return;
 
     tile->covered = 0;
+    tile->drawn = 0;
     game->covered_tiles--;
-
-    Vector neighs[9];
-    char n = get_neighbors(field, x, y, neighs);
-    for (int i = 0; i < n; i++) 
-        tile->value += get_tile(field, neighs[i].x, neighs[i].y)->mine;
-    
-    draw_tile(rendering, tile, x, y);
 
     if (tile->mine) {
         game->playing = 0;
         game->won = 0;
-        return;
-    }
-    if (game->covered_tiles == game->mines) {
-        game->playing = 0;
-        game->won = 1;
-    }
+    } else {
+        Vector neighs[9];
+        char n = get_neighbors(field, x, y, neighs);
+        for (int i = 0; i < n; i++) 
+            tile->value += get_tile(field, neighs[i].x, neighs[i].y)->mine;
 
-    if (tile->value == 0)
-        for (int i = 0; i < n; i++) {
-            Tile* t = get_tile(field, neighs[i].x, neighs[i].y);
-            reveal(rendering, game, field, t, neighs[i].x, neighs[i].y);
-        }
+        if (game->covered_tiles == game->mines) {
+            game->playing = 0;
+            game->won = 1;
+        } else if (tile->value == 0)
+            for (int i = 0; i < n; i++) {
+                Tile* t = get_tile(field, neighs[i].x, neighs[i].y);
+                reveal(rendering, game, field, t, neighs[i].x, neighs[i].y);
+            }
+    }
+    draw_tile(rendering, tile, x, y);
 }
 
 void flag(Rendering* rendering, Game* game, Tile* tile, int x, int y) {
     tile->flag = 1;
+    tile->drawn = 0;
     game->flags++;
     if (tile->mine) {
         game->correct_flags++;
@@ -102,6 +99,7 @@ void flag(Rendering* rendering, Game* game, Tile* tile, int x, int y) {
 
 void unflag(Rendering* rendering, Game* game, Tile* tile, int x, int y) {
     tile->flag = 0;
+    tile->drawn = 0;
     game->flags--;
     if (tile->mine) game->correct_flags--;
     else {
@@ -174,19 +172,26 @@ int main(int argc, char* argv[]) {
     Minefield field;
     field.width = 25;
     field.height = 20;
-    field.arr = (Tile*) malloc(sizeof(Tile)*field.width*field.height);
+    field.arr = (Tile*) calloc(field.width*field.height, sizeof(Tile));
+
+    SDL_Rect field_rect;
+    field_rect.x = BORDER_WIDTH;
+    field_rect.y = BORDER_WIDTH + BANNER_HEIGHT;
+    field_rect.w = field.width*TILE_SIZE;
+    field_rect.h = field.height*TILE_SIZE;
+
+    SDL_Rect banner_rect;
+    banner_rect.x = BORDER_WIDTH;
+    banner_rect.y = BORDER_WIDTH;
+    banner_rect.w = field_rect.w;
+    banner_rect.h = BANNER_HEIGHT;
 
     Rendering rendering;
-    rendering.origin = (Vector) {BORDER_WIDTH,BORDER_WIDTH};
-
-    SDL_Rect bannerRect;
-    bannerRect.x = rendering.origin.x;
-    bannerRect.y = rendering.origin.y;
-    bannerRect.w = field.width*TILE_SIZE;
-    bannerRect.h = BANNER_HEIGHT;
+    rendering.banner_rect = &banner_rect;
+    rendering.field_rect = &field_rect;
 
     int res;
-    int screenWidth = bannerRect.w + BORDER_WIDTH*2;
+    int screenWidth = banner_rect.w + BORDER_WIDTH*2;
     int screenHeight = field.height*TILE_SIZE + BANNER_HEIGHT + BORDER_WIDTH*2;
 
     res = SDL_Init(0);
@@ -204,29 +209,23 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    SDL_Rect squareRect = TILE_RECT;
-    
-    Tile myTile;
-    myTile.mine = 1;
-    myTile.covered = 1;
-    myTile.flag = 1;
-    myTile.value = 10;
-    SDL_Event e;
-
     rendering.renderer = renderer;
     rendering.assets = assets;
 
     Game game;
+    game.density = 10;
     game.tile_count = field.width*field.height;
-    reset_game(&game);
+    reset_game(&game, &field);
 
     SDL_SetRenderDrawColor(renderer, WHITE);  // Set the background color (black)
     SDL_RenderClear(renderer);
-    gen_field(&rendering, &game, &field, 15);
+    draw_field(&rendering, &field);
 
+    SDL_Event e;
+    SDL_Point mouse_pos;
+    int sel_x, sel_y, rel_x, rel_y;
     char running = 1;
     while (running) {
-        int sel_x, sel_y;
         
         while(SDL_PollEvent(&e)){
             switch(e.type){
@@ -234,8 +233,13 @@ int main(int argc, char* argv[]) {
                     running = 0;
                     break;
                 case SDL_MOUSEBUTTONDOWN:
-                    sel_x = (e.button.x - rendering.origin.x)/TILE_SIZE;
-                    sel_y = (e.button.y - rendering.origin.y - BANNER_HEIGHT)/TILE_SIZE;
+                    mouse_pos.x = e.button.x;
+                    mouse_pos.y = e.button.y;
+                    if (!SDL_PointInRect(&mouse_pos, rendering.field_rect))
+                        break;
+                    
+                    sel_x = (mouse_pos.x-field_rect.x)/TILE_SIZE;
+                    sel_y = (mouse_pos.y-field_rect.y)/TILE_SIZE;
                     printf("X: %i, Y: %i\r\n", sel_x, sel_y);
                     if (game.playing) {
                         if (e.button.button == SDL_BUTTON_LEFT)
@@ -245,9 +249,11 @@ int main(int argc, char* argv[]) {
                     }
                     break;
                 case SDL_KEYDOWN:
-                    if (e.key.keysym.sym == SDLK_SPACE)
-                        reset_game(&game);
-                        gen_field(&rendering, &game, &field, 10);
+                    if (e.key.keysym.sym == SDLK_SPACE) {
+                        reset_game(&game, &field);
+                        draw_field(&rendering, &field);
+                    }
+                    break;
             }
         }
 
@@ -262,7 +268,7 @@ int main(int argc, char* argv[]) {
         else
             SDL_SetRenderDrawColor(renderer, RED);
         
-        SDL_RenderFillRect(renderer, &bannerRect);
+        SDL_RenderFillRect(renderer, &banner_rect);
         // SDL_RenderCopy(renderer, assets->covered_tile, NULL, &squareRect);
         // squareRect.x += TILE_SIZE;
         // SDL_RenderCopy(renderer, assets->flagged_tile, NULL, &squareRect);
