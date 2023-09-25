@@ -1,9 +1,10 @@
 #define SDL_MAIN_HANDLED
 
+#include "main.h"
 #include "stdio.h"
 #include "SDL.h"
-#include "main.h"
 #include "graphics.h"
+#include "tile.h"
 #include <time.h>
 
 void draw_tile(Rendering* rendering, Tile* tile, int x, int y) {
@@ -52,59 +53,6 @@ void reset_game(Game* game) {
     game->correct_flags = 0;
     game->covered_tiles = game->tile_count;
     game->start_time = time(NULL);
-}
-
-char get_neighbors(Minefield* field, int x, int y, Vector neighbors[9]) {
-    char n = 0;
-    for (int j = MAX(0,y-1); j < MIN(y+2, field->height); j++)
-        for (int i = MAX(0,x-1); i < MIN(x+2, field->width); i++)
-            neighbors[n++] = (Vector) {i,j};
-    printf("neigh: [");
-    for (int i = 0; i < n; i++) {
-        printf("{%i,%i}, ", neighbors[i].x, neighbors[i].y);
-    }
-    printf("]\r\n");
-    return n;
-}
-
-char check_tile(Minefield* field, int x, int y) {
-    return x >= 0 && x < field->width && y >= 0 && y < field->height;
-}
-
-Tile* get_tile(Minefield* field, int x, int y) {
-    return field->arr + field->width*y + x;
-}
-
-void quick_reveal(Rendering* rendering, Game* game, Minefield* field, Tile* tile, int x, int y) {
-    Vector neighs[9];
-    Tile* tiles[9];
-    char n = get_neighbors(field, x, y, neighs);
-    int n_flagged = 0;
-    for (int i = 0; i < n; i++) {
-        tiles[i] = get_tile(field, neighs[i].x, neighs[i].y);
-        n_flagged += tiles[i]->flag;
-    }
-
-    if (n_flagged >= tile->value)
-        for (int i = 0; i < n; i++)
-            if (tiles[i]->covered && !tiles[i]->flag)
-                reveal(rendering, game, field, tiles[i], neighs[i].x, neighs[i].y);
-}
-
-void quick_flag(Rendering* rendering, Game* game, Minefield* field, Tile* tile, int x, int y) {
-    Vector neighs[9];
-    Tile* tiles[9];
-    char n = get_neighbors(field, x, y, neighs);
-    int n_covered = 0;
-    for (int i = 0; i < n; i++) {
-        tiles[i] = get_tile(field, neighs[i].x, neighs[i].y);
-        n_covered += tiles[i]->covered;
-    }
-
-    if (n_covered <= tile->value)
-        for (int i = 0; i < n; i++)
-            if (tiles[i]->covered && !tiles[i]->flag)
-                flag(rendering, game, tiles[i], neighs[i].x, neighs[i].y);
 }
 
 void reveal(Rendering* rendering, Game* game, Minefield* field, Tile* tile, int x, int y) {
@@ -165,6 +113,39 @@ void unflag(Rendering* rendering, Game* game, Tile* tile, int x, int y) {
         }
     }
     draw_tile(rendering, tile, x, y);
+}
+
+
+void quick_reveal(Rendering* rendering, Game* game, Minefield* field, Tile* tile, int x, int y) {
+    Vector neighs[9];
+    Tile* tiles[9];
+    char n = get_neighbors(field, x, y, neighs);
+    int n_flagged = 0;
+    for (int i = 0; i < n; i++) {
+        tiles[i] = get_tile(field, neighs[i].x, neighs[i].y);
+        n_flagged += tiles[i]->flag;
+    }
+
+    if (n_flagged >= tile->value)
+        for (int i = 0; i < n; i++)
+            if (tiles[i]->covered && !tiles[i]->flag)
+                reveal(rendering, game, field, tiles[i], neighs[i].x, neighs[i].y);
+}
+
+void quick_flag(Rendering* rendering, Game* game, Minefield* field, Tile* tile, int x, int y) {
+    Vector neighs[9];
+    Tile* tiles[9];
+    char n = get_neighbors(field, x, y, neighs);
+    int n_covered = 0;
+    for (int i = 0; i < n; i++) {
+        tiles[i] = get_tile(field, neighs[i].x, neighs[i].y);
+        n_covered += tiles[i]->covered;
+    }
+
+    if (n_covered <= tile->value)
+        for (int i = 0; i < n; i++)
+            if (tiles[i]->covered && !tiles[i]->flag)
+                flag(rendering, game, tiles[i], neighs[i].x, neighs[i].y);
 }
 
 void left_click(Rendering* rendering, Game* game, Minefield* field, int x, int y) {
